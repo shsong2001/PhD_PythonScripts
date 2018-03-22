@@ -2,7 +2,7 @@
 """
 Created on Tue Jan 16 12:04:48 2018
 
-abaqus python /home/cerecam/Dropbox/PhD/PythonCodes/WriteOdbVUELFromOdb.py
+abaqus python /home/cerecam/Desktop/GIT/PhD_PyhtonScripts/WriteOdbVUELFromOdb.py
 
 This script creates a 3D odb for a model that contains user defined elements.
 It creates the following field outputs:
@@ -304,18 +304,17 @@ for MultiFrame in steps.frames:
                              frameValue=FrameTime,
                              description='Results at time :\t '+str(FrameTime)+'s' ) # Creation of new frame
         # Add fieldoutput object to new odb  
-#        newField3 = frame.FieldOutput(name='E',
-#                                       description='Small strain at gauss points', 
-#                                       type=TENSOR_3D_FULL, 
-#                                       componentLabels=('E11','E22','E33','E12','E13','E23'),
-#                                       validInvariants=(MISES,MAX_PRINCIPAL,MID_PRINCIPAL,MIN_PRINCIPAL)) # Creation of new field otput object called 'STRAIN'
-#        # Add strain data to fieldoutput object
-#        print >> sys.__stdout__, str(type(EleList))
-#        print >> sys.__stdout__, str(type(Efinal[round(FrameTime,3)]))
-#        newField3.addData(position=INTEGRATION_POINT,
-#                          instance=instance1,
-#                          labels=tuple(EleList),
-#                          data=Efinal[round(FrameTime,3)])
+        newField3 = frame.FieldOutput(name='E',
+                                       description='Small strain at gauss points', 
+                                       type=TENSOR_3D_FULL, 
+                                       componentLabels=('E11','E22','E33','E12','E13','E23'),
+                                       validInvariants=(MISES,MAX_PRINCIPAL,MID_PRINCIPAL,MIN_PRINCIPAL)) # Creation of new field otput object called 'STRAIN'
+        # Add strain data to fieldoutput object
+                                       
+        newField3.addData(position=INTEGRATION_POINT,
+                          instance=instance1,
+                          labels=tuple(EleList),
+                          data=Efinal[round(FrameTime,3)])
 #        # Add fieldoutput object to new odb                 
 #        newField4 = frame.FieldOutput(name='S',
 #                                       description='Total stress at gauss points', 
