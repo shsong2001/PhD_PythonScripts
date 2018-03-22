@@ -247,7 +247,7 @@ for MultiFrame in steps.frames:
         k = 5.0E+01
         elements = []
         for Ele_Label in EleList:    # runs through dictionary containing every element (key = element number) and its nodal conncetivity
-            elements.append(Ele_Label[:-2])
+            elements.append(int(Ele_Label[:-2]))
             ## Elastic material parameters
             Gmod =  0.5*MatE[int(Ele_Label[-1])]/(1.0+Matmu[int(Ele_Label[-1])])
             lam = (MatE[int(Ele_Label[-1])]*Matmu[int(Ele_Label[-1])])/((1.0+Matmu[int(Ele_Label[-1])])*(1.0-2.0*Matmu[int(Ele_Label[-1])]))
