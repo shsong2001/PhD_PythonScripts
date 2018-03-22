@@ -141,9 +141,8 @@ part1 = odb.Part(name='Part-1', embeddedSpace=THREE_D, type=DEFORMABLE_BODY)
 part1.addNodes(nodeData=tuple(nodeData), nodeSetName='All_NODES') # add nodes to part
 
 # Get element node-connectivity of old odb from .inp files and add to new odb part
-Ele_Con_Dict_Mat= [[],[]]
-Ele_Con_Dict0 = {}
-Ele_Con_Dict1 = {}
+EleList= []
+Ele_Con_Dict = {}
 for num, Fname in enumerate(ElementFiles):
     elementData1 = []
     Efile = open(Fname)
@@ -153,22 +152,16 @@ for num, Fname in enumerate(ElementFiles):
         else:
             newarray = map(int,line.split(',')) # Read first line and convert string to a list of integers
             elementData1.append(tuple(newarray))
-            if num == 0:
-                Ele_Con_Dict0[newarray[0]] = newarray[1:]
-            elif num ==1:
-                Ele_Con_Dict1[newarray[0]] = newarray[1:]                
+            Ele_Con_Dict[newarray[0]] = [newarray[1:],num] 
+            EleList.append(newarray[0])             
             del newarray
     elementData1 = tuple(elementData1)
     Efile.close()
     part1.addElements(elementData=elementData1, type='C3D4', elementSetName=materialNames[num]) # add elements to part
-Ele_Con_Dict_Mat[0] = Ele_Con_Dict0
-Ele_Con_Dict_Mat[1] = Ele_Con_Dict1
-EleList_mat = [sorted(Ele_Con_Dict0.keys()),sorted(Ele_Con_Dict1.keys())] # List of elements in ascendign order
-print >> sys.__stdout__, str(Ele_Con_Dict_Mat[1].items()[0])
-print >> sys.__stdout__, str(Ele_Con_Dict_Mat[1].values()[0])
-print >> sys.__stdout__, str(EleList_mat[1][0])
-print >> sys.__stdout__, str(Ele_Con_Dict_Mat[1][EleList_mat[1][0]])
-a = b
+EleList = sorted(EleList) # List of elements in ascending order
+
+#print >> sys.__stdout__, str(Ele_Con_Dict[11151])
+#a=b
 # Instance the part
 instance1= odb.rootAssembly.Instance(name='I_Cube', object=part1)
 
@@ -204,9 +197,9 @@ count = 0
 #for line in ElecF:
 #    newarray = map(float,line.split(','))
 #    ElecData[int(newarray[0][4:])] = newarray[1]
-#for MultiFrame in steps.frames:
-for MultiFrame in [steps.frames[-1]]:
-    FrameTime= round(MultiFrame.frameValue,2)
+for MultiFrame in steps.frames:
+#for MultiFrame in [steps.frames[-1]]:
+#    FrameTime= round(MultiFrame.frameValue,2)
     if round(MultiFrame.frameValue,2)==FrameTime:
         
         #########################################################################################
@@ -255,24 +248,28 @@ for MultiFrame in [steps.frames[-1]]:
         Z = -1.0
         k = 5.0E+01
         elements = []
-        for Ele_Label in EleList:    # runs through dictionary containing every element (key = element number) and its nodal conncetivity
-            elements.append(int(Ele_Label[:-2]))
-            ## Elastic material parameters
-            Gmod =  0.5*MatE[int(Ele_Label[-1])]/(1.0+Matmu[int(Ele_Label[-1])])
-            lam = (MatE[int(Ele_Label[-1])]*Matmu[int(Ele_Label[-1])])/((1.0+Matmu[int(Ele_Label[-1])])*(1.0-2.0*Matmu[int(Ele_Label[-1])]))
+        Mat = -1
+        for Ele_Label in EleList:
+            
+            Mat = Ele_Con_Dict[Ele_Label][1]    # Material of specified element
+            Ele_con = Ele_Con_Dict[Ele_Label][0] # Nodal connectivity of current element
+            
+            ## Elastic material parameters            
+            Gmod =  0.5*MatE[Mat]/(1.0+Matmu[Mat])
+            lam = (MatE[Mat]*Matmu[Mat])/((1.0+Matmu[Mat])*(1.0-2.0*Matmu[Mat]))
         
             Node_Vals = {}
 #            Elec_Ele_Data = {}
-            for i in Ele_Con_Dict[Ele_Label]:    # Creates dictionary (key = node label) of nodal coordinates (X,Y,Z) for element in question (Ele_Con[0])
+            for i in Ele_con:    # Creates dictionary (key = node label) of nodal coordinates (X,Y,Z) for element in question (Ele_Con[0])
                 Node_Vals[str(i)] = nodeDict[str(i)] 
 #                Elec_Ele_Data[str(i)] = ElecData[int(i)]
         
-            dNdX1,dNdX2,dNdX3, pNN = StressStrain(Ele_Con_Dict[Ele_Label], Node_Vals) # Function defining shape functions and there derivatives
+            dNdX1,dNdX2,dNdX3, pNN = StressStrain(Ele_con, Node_Vals) # Function defining shape functions and there derivatives
             H = [0.0,0.0,0.0]
             Conc_gp = 0.0
             ElecField = [0.0,0.0,0.0]
             Tarray = []
-            for x,y in enumerate(Ele_Con_Dict[Ele_Label]):
+            for x,y in enumerate(Ele_con):
                 Uarray = DispData[int(y)-1]
 #                Tarray.append(float(TempDataDict[round(MultiFrame.frameValue,3)][int(y)-1][0]))
                 H = H + np.outer(Uarray,np.array([dNdX1[x],dNdX2[x],dNdX3[x]])) # Grad(U)
@@ -283,9 +280,6 @@ for MultiFrame in [steps.frames[-1]]:
 #            Qf = F*((Z*Conc_gp+(1.2E-3)))
             
             E = 0.5*(np.transpose(H)+H)   # Strain calculation at Gauss point 
-            print >> sys.__stdout__, str(EleList[-3:-1])
-            print >> sys.__stdout__, str(E)
-            a =b
             
 #            S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
 #            S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
@@ -299,7 +293,6 @@ for MultiFrame in [steps.frames[-1]]:
 #            Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]]))  
 #            Ss_elec.append(tuple(S_elec.flatten()[[0,4,8,1,2,5]])) 
 #            Ss_tot.append(tuple(S_total.flatten()[[0,4,8,1,2,5]])) 
-#            
         # Store data for frame in question              
         Efinal[round(MultiFrame.frameValue,3)] = tuple(Ee)
 #        print >> sys.__stdout__, str(Efinal)
@@ -326,7 +319,7 @@ for MultiFrame in [steps.frames[-1]]:
        # Add strain field                                       
         newField3.addData(position=INTEGRATION_POINT,
                           instance=instance1,
-                          labels=tuple(elements),
+                          labels=tuple(EleList),
                           data=Efinal[round(FrameTime,3)])
                           
 #        # Add fieldoutput object to new odb                 
@@ -338,7 +331,7 @@ for MultiFrame in [steps.frames[-1]]:
 #        # Add Total stress field                               
 #        newField4.addData(position=INTEGRATION_POINT,
 #                          instance=instance1,
-#                          labels=tuple(elements),
+#                          labels=tuple(EleList),
 #                          data=S_totfinal[round(FrameTime,3)]) 
 #
 #        # Add data to fieldoutput object                          
@@ -350,7 +343,7 @@ for MultiFrame in [steps.frames[-1]]:
 #        # Add mechanical stress field                               
 #        newField5.addData(position=INTEGRATION_POINT,
 #                          instance=instance1,
-#                          labels=tuple(elements),
+#                          labels=tuple(EleList),
 #                          data=S_mechfinal[round(FrameTime,3)])
 #
 #        # Add data to fieldoutput object                          
@@ -362,7 +355,7 @@ for MultiFrame in [steps.frames[-1]]:
 #        # Add chemical stress field                               
 #        newField6.addData(position=INTEGRATION_POINT,
 #                          instance=instance1,
-#                          labels=tuple(elements),
+#                          labels=tuple(EleList),
 #                          data=S_chemfinal[round(FrameTime,3)])                 
 #
 #        # Add data to fieldoutput object                          
@@ -375,7 +368,7 @@ for MultiFrame in [steps.frames[-1]]:
 #        # Add electrical stress field                              
 #        newField7.addData(position=INTEGRATION_POINT,
 #                          instance=instance1,
-#                          labels=tuple(elements),
+#                          labels=tuple(EleList),
 #                          data=S_elecfinal[round(FrameTime,3)])                    
                          
         # Add fieldoutput object to new odb
