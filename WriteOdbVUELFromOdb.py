@@ -96,7 +96,8 @@ Matmu = [0.3,0.44]
 
 # File names and locations for old odb
 cwd = '/home/cerecam/Dropbox/PhD/PythonCodes/'
-OldOdbName = 'TestCase2.odb'
+OldOdbNameNoext = 'TestCase2'
+OldOdbName = OldOdbNameNoext + '.odb'
 ElementFiles = [cwd + 'UserElements.inp',
                 cwd +'GoldElements.inp'] # Files with element connectivity description
                 
@@ -191,12 +192,12 @@ Efinal, S_totfinal = {}, {}
 S_mechfinal, S_chemfinal, S_elecfinal = {}, {}, {}
 count = 0
 
-ELecFile = 'ElecPotentialInitial.inp'
+ElecFile = cwd +'ElecPotentialsInitial.inp'
 ElecF = open(ElecFile,'r')
 ElecData = [0]*len(nodeData)
 for line in ElecF:
-    newarray = map(float,line.split(','))
-    ElecData[int(newarray[0][4:])] = newarray[1]
+    newarray = map(str,line.split(','))
+    ElecData[int(newarray[0][-(len(newarray[0])-len(OldOdbNameNoext)-3):])] = float(newarray[1])
 for MultiFrame in steps.frames:
 #for MultiFrame in [steps.frames[-1]]:
 #    FrameTime= round(MultiFrame.frameValue,2)
@@ -263,27 +264,30 @@ for MultiFrame in steps.frames:
             Elec_Ele_Data = {}
             for i in Ele_con:    # Creates dictionary (key = node label) of nodal coordinates (X,Y,Z) for element in question (Ele_Con[0])
                 Node_Vals[str(i)] = nodeDict[str(i)] 
-                Elec_Ele_Data[str(i)] = ElecData[int(i)]
+                Elec_Ele_Data[int(i)] = ElecData[int(i)]
         
             dNdX1,dNdX2,dNdX3, pNN = StressStrain(Ele_con, Node_Vals) # Function defining shape functions and there derivatives
             H = [0.0,0.0,0.0]
             Conc_gp = 0.0
-            ElecField = [0.0,0.0,0.0]
+            ElecField = np.array([0.0,0.0,0.0])
             Tarray = []
             for x,y in enumerate(Ele_con):
                 Uarray = DispData[int(y)-1]
                 H = H + np.outer(Uarray,np.array([dNdX1[x],dNdX2[x],dNdX3[x]])) # Grad(U)
+                
                 if materialNames[Mat].lower() == 'polymer':               
                     Tarray.append(float(TempDataDict[round(MultiFrame.frameValue,3)][int(y)-1][0]))
+                    ElecField_int = [dNdX*Elec_Ele_Data[y] for dNdX in [dNdX1[x],dNdX2[x],dNdX3[x]]]
+                    ElecField = ElecField - np.array(ElecField_int)
                     
                 else:
                     Tarray.append(csat)
 #                a=b    
                 
-            ElecField = ElecField - ((/dNdX1[x],dNdX2[x],dNdX3[x]/))*Elec_Ele_Data[y]
+
             Conc_gp =  np.dot(np.array(pNN),np.array(Tarray))
             
-            ElecDisp = np.array(e_zero*E_r*ElecField)
+            ElecDisp = np.array(e_zero*e_r*ElecField)
             Qf = F*((Z*Conc_gp+(csat)))
             
 
@@ -294,7 +298,7 @@ for MultiFrame in steps.frames:
             S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
             S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
             
-            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
+            S_elec = (1.0/(e_zero*e_r))*((np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
 #            S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
             S_total = S_mech+S_chem+S_elec           
             Ee.append(tuple(E.flatten()[[0,4,8,1,2,5]]))    # create vector format of strain data ('E11','E22','E33','E12','E13','E23')           
