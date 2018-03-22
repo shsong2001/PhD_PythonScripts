@@ -245,8 +245,9 @@ for MultiFrame in steps.frames:
         F = 9.6485337E+04
         Z = -1.0
         k = 5.0E+01
-        
+        elements = []
         for Ele_Label in EleList:    # runs through dictionary containing every element (key = element number) and its nodal conncetivity
+            elements.append(Ele_Label[:-2])
             ## Elastic material parameters
             Gmod =  0.5*MatE[int(Ele_Label[-1])]/(1.0+Matmu[int(Ele_Label[-1])])
             lam = (MatE[int(Ele_Label[-1])]*Matmu[int(Ele_Label[-1])])/((1.0+Matmu[int(Ele_Label[-1])])*(1.0-2.0*Matmu[int(Ele_Label[-1])]))
@@ -275,25 +276,25 @@ for MultiFrame in steps.frames:
             Qf = F*((Z*Conc_gp+(1.2E-3)))
             
             E = 0.5*(np.transpose(H)+H)   # Strain calculation at Gauss point             
-            S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
-            S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
-#            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
-            S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
-            S_total = S_mech+S_chem+S_elec
+#            S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
+#            S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
+##            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
+#            S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
+#            S_total = S_mech+S_chem+S_elec
             
             Ee.append(tuple(E.flatten()[[0,4,8,1,2,5]]))    # create vector format of strain data ('E11','E22','E33','E12','E13','E23')           
-            Ss_mech.append(tuple(S_mech.flatten()[[0,4,8,1,2,5]]))   # create vector format of strain data ('S11','S22','S33','S12','S13','S23')
-            Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]])) 
-            Ss_elec.append(tuple(S_elec.flatten()[[0,4,8,1,2,5]])) 
-            Ss_tot.append(tuple(S_total.flatten()[[0,4,8,1,2,5]])) 
+#            Ss_mech.append(tuple(S_mech.flatten()[[0,4,8,1,2,5]]))   # create vector format of strain data ('S11','S22','S33','S12','S13','S23')
+#            Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]])) 
+#            Ss_elec.append(tuple(S_elec.flatten()[[0,4,8,1,2,5]])) 
+#            Ss_tot.append(tuple(S_total.flatten()[[0,4,8,1,2,5]])) 
             
         # Store data for frame in question              
         Efinal[round(MultiFrame.frameValue,3)] = tuple(Ee)
 #        print >> sys.__stdout__, str(Efinal)
-        S_mechfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_mech)
-        S_chemfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_chem)
-        S_elecfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_elec)
-        S_totfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_tot)
+#        S_mechfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_mech)
+#        S_chemfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_chem)
+#        S_elecfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_elec)
+#        S_totfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_tot)
         
         #########################################################################################
         #NEW ODB FIELD DATA CREATION
@@ -310,12 +311,14 @@ for MultiFrame in steps.frames:
                                        componentLabels=('E11','E22','E33','E12','E13','E23'),
                                        validInvariants=(MISES,MAX_PRINCIPAL,MID_PRINCIPAL,MIN_PRINCIPAL)) # Creation of new field otput object called 'STRAIN'
         # Add strain data to fieldoutput object
+        print >> sys.__stdout__, str(elements[0])+ '\t'+str( type(elements[5]))
+        print >> sys.__stdout__, str(Efinal[round(FrameTime,3)][0]) + '\t'+str(type(Efinal[round(FrameTime,3)][5]))
                                        
         newField3.addData(position=INTEGRATION_POINT,
                           instance=instance1,
-                          labels=tuple(EleList),
+                          labels=tuple(elements),
                           data=Efinal[round(FrameTime,3)])
-#        # Add fieldoutput object to new odb                 
+        # Add fieldoutput object to new odb                 
 #        newField4 = frame.FieldOutput(name='S',
 #                                       description='Total stress at gauss points', 
 #                                       type=TENSOR_3D_FULL, 
@@ -326,7 +329,7 @@ for MultiFrame in steps.frames:
 #                          instance=instance1,
 #                          labels=tuple(EleList),
 #                          data=S_totfinal[round(FrameTime,3)]) 
-#                          
+                          
 #        newField4 = frame.FieldOutput(name='S_m',
 #                                       description='Mechanical stress at gauss points', 
 #                                       type=TENSOR_3D_FULL, 
@@ -361,26 +364,26 @@ for MultiFrame in steps.frames:
 #                          data=S_elecfinal[round(FrameTime,3)])                    
                          
         # Add fieldoutput object to new odb
-#        newField = frame.FieldOutput(name='U',
-#                                     description='Displacements', 
-#                                     type=VECTOR,
-#                                     validInvariants=(MAGNITUDE,)) # Creation of new field otput object called 'U'
-#        # Add data to fieldoutput object
-#        newField.addData(position=NODAL,
-#                          instance=instance1,
-#                          labels=DispNodesDict[round(FrameTime,3)],
-#                          data=DispDataDict[round(FrameTime,3)])
-#        step1.setDefaultField(newField)
-#        
-#        # Add fieldoutput object to new odb
-#        newField2 = frame.FieldOutput(name='Co',
-#                                      description='Concentration', 
-#                                      type=SCALAR) # Creation of new field otput object called 'CONCENTRATION'
-#        # Add data to fieldoutput object
-#        newField2.addData(position=NODAL,
-#                          instance=instance1,
-#                          labels=TempNodesDict[round(FrameTime,3)],
-#                          data=TempDataDict[round(FrameTime,3)])
+        newField = frame.FieldOutput(name='U',
+                                     description='Displacements', 
+                                     type=VECTOR,
+                                     validInvariants=(MAGNITUDE,)) # Creation of new field otput object called 'U'
+        # Add data to fieldoutput object
+        newField.addData(position=NODAL,
+                          instance=instance1,
+                          labels=DispNodesDict[round(FrameTime,3)],
+                          data=DispDataDict[round(FrameTime,3)])
+        step1.setDefaultField(newField)
+        
+        # Add fieldoutput object to new odb
+        newField2 = frame.FieldOutput(name='Co',
+                                      description='Concentration', 
+                                      type=SCALAR) # Creation of new field otput object called 'CONCENTRATION'
+        # Add data to fieldoutput object
+        newField2.addData(position=NODAL,
+                          instance=instance1,
+                          labels=TempNodesDict[round(FrameTime,3)],
+                          data=TempDataDict[round(FrameTime,3)])
         
 #        # Add fieldoutput object to new odb
 #        newField5 = frame.FieldOutput(name='EP',
