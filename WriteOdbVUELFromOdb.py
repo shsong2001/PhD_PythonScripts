@@ -224,7 +224,6 @@ for MultiFrame in [steps.frames[-1]]:
             TempData.append(tuple([val.dataDouble,]))# Data at node
         TempDataDict[round(MultiFrame.frameValue,3)]=tuple(TempData)
         TempNodesDict[round(MultiFrame.frameValue,3)] = tuple(TempNodes)
-        
 #         # Elec data at Gauss point:
 #        FieldValue = MultiFrame.fieldOutputs['FV1']    # Extract Temperature fieldOutput object from old Odb
 #        FieldValueData = []
@@ -240,6 +239,7 @@ for MultiFrame in [steps.frames[-1]]:
         Ss_mech, Ss_chem, Ss_elec, Ss_tot = [], [], [], []
         
 ##################### MATERIAL PARAMETERS #############################
+
         e_r = 1.0E3
         e_zero = 8.854E-12
         F = 9.6485337E+04
@@ -278,13 +278,14 @@ for MultiFrame in [steps.frames[-1]]:
             E = 0.5*(np.transpose(H)+H)   # Strain calculation at Gauss point             
             S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
             S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
+            
 #            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
             S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
             S_total = S_mech+S_chem+S_elec
             
             Ee.append(tuple(E.flatten()[[0,4,8,1,2,5]]))    # create vector format of strain data ('E11','E22','E33','E12','E13','E23')           
             Ss_mech.append(tuple(S_mech.flatten()[[0,4,8,1,2,5]]))   # create vector format of strain data ('S11','S22','S33','S12','S13','S23')
-            Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]])) 
+            Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]]))  
             Ss_elec.append(tuple(S_elec.flatten()[[0,4,8,1,2,5]])) 
             Ss_tot.append(tuple(S_total.flatten()[[0,4,8,1,2,5]])) 
             
@@ -292,7 +293,7 @@ for MultiFrame in [steps.frames[-1]]:
         Efinal[round(MultiFrame.frameValue,3)] = tuple(Ee)
 #        print >> sys.__stdout__, str(Efinal)
         S_mechfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_mech)
-        S_chemfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_chem)
+        S_chemfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_chem) 
         S_elecfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_elec)
         S_totfinal[round(MultiFrame.frameValue,3)] = tuple(Ss_tot)
         
