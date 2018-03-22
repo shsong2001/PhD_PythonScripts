@@ -191,12 +191,12 @@ Efinal, S_totfinal = {}, {}
 S_mechfinal, S_chemfinal, S_elecfinal = {}, {}, {}
 count = 0
 
-#ELecFile = 'ElecPotentialInitial.inp'
-#ElecF = open(ElecFile,'r')
-#ElecData = [0]*len(nodeData)
-#for line in ElecF:
-#    newarray = map(float,line.split(','))
-#    ElecData[int(newarray[0][4:])] = newarray[1]
+ELecFile = 'ElecPotentialInitial.inp'
+ElecF = open(ElecFile,'r')
+ElecData = [0]*len(nodeData)
+for line in ElecF:
+    newarray = map(float,line.split(','))
+    ElecData[int(newarray[0][4:])] = newarray[1]
 for MultiFrame in steps.frames:
 #for MultiFrame in [steps.frames[-1]]:
 #    FrameTime= round(MultiFrame.frameValue,2)
@@ -260,10 +260,10 @@ for MultiFrame in steps.frames:
             lam = (MatE[Mat]*Matmu[Mat])/((1.0+Matmu[Mat])*(1.0-2.0*Matmu[Mat]))
         
             Node_Vals = {}
-#            Elec_Ele_Data = {}
+            Elec_Ele_Data = {}
             for i in Ele_con:    # Creates dictionary (key = node label) of nodal coordinates (X,Y,Z) for element in question (Ele_Con[0])
                 Node_Vals[str(i)] = nodeDict[str(i)] 
-#                Elec_Ele_Data[str(i)] = ElecData[int(i)]
+                Elec_Ele_Data[str(i)] = ElecData[int(i)]
         
             dNdX1,dNdX2,dNdX3, pNN = StressStrain(Ele_con, Node_Vals) # Function defining shape functions and there derivatives
             H = [0.0,0.0,0.0]
@@ -280,15 +280,13 @@ for MultiFrame in steps.frames:
                     Tarray.append(csat)
 #                a=b    
                 
-#                ElecField = ElecField - ((/dNdX1[x],dNdX2[x],dNdX3[x]/))*Elec_Ele_Data[y]
+            ElecField = ElecField - ((/dNdX1[x],dNdX2[x],dNdX3[x]/))*Elec_Ele_Data[y]
             Conc_gp =  np.dot(np.array(pNN),np.array(Tarray))
             
-#            ElecDisp = np.array(e_zero*E_r*ElecField)
+            ElecDisp = np.array(e_zero*E_r*ElecField)
             Qf = F*((Z*Conc_gp+(csat)))
             
-            if Ele_Label == 120:
-                print >> sys.__stdout__, str(Tarray)
-                print >> sys.__stdout__, str(Tarray)
+
             E = 0.5*(np.transpose(H)+H)   # Strain calculation at Gauss point 
 #            if Ele_Label == 11150:
 #                print >> sys.__stdout__, str(E)
@@ -296,10 +294,9 @@ for MultiFrame in steps.frames:
             S_mech = 2.0*Gmod*E+lam*np.trace(E)*np.eye(3)  # Mecahnical stress calculation at Gauss point
             S_chem = -((k*Qf)/Z)*np.eye(3)  # Chemical Stress calculation at Gauss point
             
-#            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
-            S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
-            S_total = S_mech+S_chem+S_elec
-            
+            S_elec = 1.0/(e_zero*e_r)(*(np.outer(ElecDisp,ElecDisp)) - 0.5*(np.dot(ElecDisp,ElecDisp))*np.eye(3))
+#            S_elec = np.array([[0.0,0.0,0.0],[0.0,0.0,0.0],[0.0,0.0,0.0]])
+            S_total = S_mech+S_chem+S_elec           
             Ee.append(tuple(E.flatten()[[0,4,8,1,2,5]]))    # create vector format of strain data ('E11','E22','E33','E12','E13','E23')           
             Ss_mech.append(tuple(S_mech.flatten()[[0,4,8,1,2,5]]))   # create vector format of strain data ('S11','S22','S33','S12','S13','S23')
             Ss_chem.append(tuple(S_chem.flatten()[[0,4,8,1,2,5]]))  
