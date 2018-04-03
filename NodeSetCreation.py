@@ -4,7 +4,7 @@ Created on Mon Oct 16 09:48:58 2017
 
 @author: cerecam
 
-abaqus viewer noGui=/home/cerecam/Dropbox/PhD/PythonCodes/periodicNodes.py
+abaqus viewer noGui=/home/cerecam/Desktop/GIT/PhD_PythonScriptsNOdeSetCreation.py
 """
 
 def writefile(filename, values,nset, instanceName):
@@ -45,18 +45,17 @@ import csv,math
 import sys,os
 from odbAccess import openOdb
 
-Dimensions = [(0.0,34.5488),(0.0,34.5488),(0.0,34.5488)]
+Dimensions = [(0.0,1.0),(0.0,1.0),(0.0,1.0)]
 ##############################################################
 #INPUTS TO DEFINE!!!!!!!!!!!!!
-currentwd = '/home/cerecam/Desktop/Npg_Comp_Model_58_42'
+currentwd = '/home/cerecam/Desktop/Voxel_models/2M_32x32x32'
 outputwd = currentwd
-filename = 'NPG_58_42'
-odbfile = '/NPG_58_42' 
+filename = 'Voxel32'
+odbfile = '/Voxel32' 
 material1= 'Gold'
 material2= 'Dummy'
 instanceName = 'i_cube'
-currentwd = '/home/cerecam/Desktop/Npg_Comp_Model_58_42'
-inputFile='NPG_IMPROVED_58_42.inp'
+inputFile='Voxel32.inp'
 ##############################################################
 
 odbname = str(currentwd)+str(odbfile)+'.odb'
